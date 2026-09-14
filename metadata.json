@@ -1,0 +1,6 @@
+{
+  "name": "BharatTrade",
+  "description": "World-Class Indian Stock Trading & Analytics Platform featuring live market ticks, advanced candlestick charts, paper trading, risk calculators, and Gemini AI analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
