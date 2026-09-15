@@ -268,6 +268,11 @@ fun BharatTradeApp(viewModel: TradingViewModel) {
                     onStockClick = { stock ->
                         viewModel.selectStock(stock)
                         viewModel.setTab(AppTab.CHART)
+                    },
+                    onOrderApply = { qty, side, entry, sl, tgt ->
+                        selectedStock?.let { st ->
+                            viewModel.openOrderSheet(st, side)
+                        }
                     }
                 )
 

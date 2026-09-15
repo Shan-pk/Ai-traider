@@ -48,8 +48,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.model.OrderSide
 import com.example.model.RiskCalculation
 import com.example.model.Stock
+import com.example.ui.components.RiskCalculatorView
 import com.example.ui.components.formatInr
 import com.example.ui.theme.AccentCyan
 import com.example.ui.theme.AccentGold
@@ -70,7 +72,8 @@ fun ScreenerRiskScreen(
     stocks: List<Stock>,
     riskCalculation: RiskCalculation,
     onCalculateRisk: (Double, Double, Double, Double, Double) -> Unit,
-    onStockClick: (Stock) -> Unit
+    onStockClick: (Stock) -> Unit,
+    onOrderApply: ((quantity: Int, side: OrderSide, entry: Double, sl: Double, target: Double) -> Unit)? = null
 ) {
     var activeTab by remember { mutableIntStateOf(0) } // 0: Screener, 1: Risk Calculator
     var selectedStrategy by remember { mutableStateOf(ScreenerStrategy.ALL) }
@@ -119,7 +122,8 @@ fun ScreenerRiskScreen(
         } else {
             RiskCalculatorView(
                 currentRisk = riskCalculation,
-                onCalculate = onCalculateRisk
+                onCalculate = onCalculateRisk,
+                onOrderApply = onOrderApply
             )
         }
     }
@@ -241,155 +245,3 @@ fun MetricBadge(label: String, value: String) {
     }
 }
 
-@Composable
-fun RiskCalculatorView(
-    currentRisk: RiskCalculation,
-    onCalculate: (Double, Double, Double, Double, Double) -> Unit
-) {
-    var capital by remember { mutableDoubleStateOf(currentRisk.capital) }
-    var riskPct by remember { mutableDoubleStateOf(currentRisk.riskPercent) }
-    var entry by remember { mutableDoubleStateOf(currentRisk.entryPrice) }
-    var sl by remember { mutableDoubleStateOf(currentRisk.stopLossPrice) }
-    var target by remember { mutableDoubleStateOf(currentRisk.targetPrice) }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        item {
-            Text(
-                text = "SEBI-ALIGNED RISK & POSITION SIZER",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Protect capital by computing strictly defined position limits based on maximum risk tolerance.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Inputs
-            OutlinedTextField(
-                value = capital.toInt().toString(),
-                onValueChange = {
-                    capital = it.toDoubleOrNull() ?: capital
-                    onCalculate(capital, riskPct, entry, sl, target)
-                },
-                label = { Text("Trading Capital (₹)") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = riskPct.toString(),
-                    onValueChange = {
-                        riskPct = it.toDoubleOrNull() ?: riskPct
-                        onCalculate(capital, riskPct, entry, sl, target)
-                    },
-                    label = { Text("Risk % (1-2%)") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                )
-                OutlinedTextField(
-                    value = entry.toString(),
-                    onValueChange = {
-                        entry = it.toDoubleOrNull() ?: entry
-                        onCalculate(capital, riskPct, entry, sl, target)
-                    },
-                    label = { Text("Entry Price (₹)") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = sl.toString(),
-                    onValueChange = {
-                        sl = it.toDoubleOrNull() ?: sl
-                        onCalculate(capital, riskPct, entry, sl, target)
-                    },
-                    label = { Text("Stop Loss (₹)") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                )
-                OutlinedTextField(
-                    value = target.toString(),
-                    onValueChange = {
-                        target = it.toDoubleOrNull() ?: target
-                        onCalculate(capital, riskPct, entry, sl, target)
-                    },
-                    label = { Text("Target Price (₹)") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Output Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("CALCULATED POSITION FRAMEWORK", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("Recommended Qty", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("${currentRisk.recommendedQuantity} Shares", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Risk : Reward Ratio", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("1 : ${currentRisk.riskRewardRatio}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, color = BullishGreen)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("Max Capital at Risk", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(formatInr(currentRisk.maxRiskAmount), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, color = BearishRed)
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Potential Target Profit", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(formatInr(currentRisk.targetProfitAmount), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, color = BullishGreen)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("Total Position Value", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(formatInr(currentRisk.positionCapitalRequired), style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Est. Taxes & Brokerage", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(formatInr(currentRisk.estimatedCharges), style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
